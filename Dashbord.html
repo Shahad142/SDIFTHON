@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI EL Inspection Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+        
+        .status-accept { background: linear-gradient(135deg, #10b981, #059669); }
+        .status-reject { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .status-recheck { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        
+        .panel-image {
+            background: linear-gradient(45deg, #374151 25%, transparent 25%), 
+                        linear-gradient(-45deg, #374151 25%, transparent 25%), 
+                        linear-gradient(45deg, transparent 75%, #374151 75%), 
+                        linear-gradient(-45deg, transparent 75%, #374151 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+        
+        .heatmap-overlay {
+            background: radial-gradient(circle at 30% 40%, rgba(239, 68, 68, 0.8) 0%, transparent 30%),
+                        radial-gradient(circle at 70% 60%, rgba(245, 158, 11, 0.6) 0%, transparent 25%),
+                        radial-gradient(circle at 50% 20%, rgba(239, 68, 68, 0.7) 0%, transparent 20%);
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .7; }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-white min-h-screen">
+    <!-- Navigation Header -->
+    <nav class="bg-slate-800 border-b border-slate-700 px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <span class="text-white font-bold text-lg">AI</span>
+                </div>
+                <h1 class="text-xl font-semibold">EL Inspection System</h1>
+                <span class="text-sm text-slate-400"></span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2">
+                    <div class="w-3 h-3 bg-green-500 rounded-full pulse-animation"></div>
+                    <span class="text-sm text-slate-300">System Active</span>
+                </div>
+                <button class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-sm transition-colors">
+                    Settings
+                </button>
+            </div>
+        </div>
+        
+        <!-- Tab Navigation -->
+        <div class="flex space-x-1 mt-4">
+            <button onclick="showScreen('live')" id="tab-live" class="tab-button bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                Live Dashboard
+            </button>
+            <button onclick="showScreen('report')" id="tab-report" class="tab-button bg-slate-700 hover:bg-slate-600 text-slate-300 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                Panel Report
+            </button>
+            <button onclick="showScreen('analytics')" id="tab-analytics" class="tab-button bg-slate-700 hover:bg-slate-600 text-slate-300 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                Analytics
+            </button>
+            <button onclick="showScreen('escalation')" id="tab-escalation" class="tab-button bg-slate-700 hover:bg-slate-600 text-slate-300 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                Escalation
+            </button>
+        </div>
+    </nav>
+
+    <!-- Screen 1: Live Inspection Dashboard -->
+    <div id="screen-live" class="screen-content p-6">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-140px)]">
+            <!-- Main EL Image Display -->
+            <div class="lg:col-span-3 bg-slate-800 rounded-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold">Current Panel Inspection</h2>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-sm text-slate-400">Panel ID:</span>
+                        <span class="font-mono text-blue-400" id="current-panel-id">SP-2024-001847</span>
+                    </div>
+                </div>
+                
+                <div class="relative bg-slate-700 rounded-lg overflow-hidden h-[900px] w-[1800px]">
+                   
+
+                    <!-- EL Image with Heatmap -->
+                    <div class="panel-image w-full h-full relative">
+                        <div class="heatmap-overlay absolute inset-0 opacity-80"></div>
+                        <div class="absolute inset-0 flex items-center justify-center">
+    <img src="C:\Users\acer\Downloads\example_13.png" alt="EL Panel Image" class="h-full w-full object-cover"/>
+</div>
+
+                        
+                        <!-- Defect Markers -->
+                        <div class="absolute top-1/3 left-1/4 w-4 h-4 bg-red-500 rounded-full border-2 border-white pulse-animation"></div>
+                        <div class="absolute top-2/3 right-1/3 w-4 h-4 bg-yellow-500 rounded-full border-2 border-white pulse-animation"></div>
+                        <div class="absolute bottom-1/4 left-1/2 w-4 h-4 bg-red-500 rounded-full border-2 border-white pulse-animation"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sidebar with Decision & Stats -->
+            <div class="space-y-6">
+                <!-- Current Decision -->
+                <div class="bg-slate-800 rounded-xl p-6">
+                    <h3 class="text-lg font-semibold mb-4">AI Decision</h3>
+                    <div class="status-reject rounded-lg p-4 text-center">
+                        <div class="text-3xl mb-2">❌</div>
+                        <div class="font-semibold text-lg">REJECT</div>
+                        <div class="text-sm opacity-90 mt-1">Confidence: 94.2%</div>
+                    </div>
+                    <div class="mt-4 space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span>Defects Found:</span>
+                            <span class="text-red-400 font-semibold">3</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Processing Time:</span>
+                            <span class="text-blue-400">1.2s</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Real-time Throughput -->
+                <div class="bg-slate-800 rounded-xl p-6">
+                    <h3 class="text-lg font-semibold mb-4">Throughput</h3>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-green-400" id="throughput-counter">24.7</div>
+                        <div class="text-sm text-slate-400">panels/minute</div>
+                    </div>
+                    <div class="mt-4 space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span>Today Total:</span>
+                            <span class="text-blue-400 font-semibold">1,847</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Accept Rate:</span>
+                            <span class="text-green-400 font-semibold">87.3%</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Reject Rate:</span>
+                            <span class="text-red-400 font-semibold">12.7%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Stats -->
+                <div class="bg-slate-800 rounded-xl p-6">
+                    <h3 class="text-lg font-semibold mb-4">Quick Stats</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm">✅ Accepted</span>
+                            <span class="text-green-400 font-semibold">1,612</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm">❌ Rejected</span>
+                            <span class="text-red-400 font-semibold">235</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm">🔍 Recheck</span>
+                            <span class="text-yellow-400 font-semibold">47</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen 2: Panel Report Page -->
+    <div id="screen-report" class="screen-content hidden p-6">
+        <div class="max-w-7xl mx-auto space-y-6">
+            <!-- Panel Header -->
+            <div class="bg-slate-800 rounded-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-2xl font-semibold">Panel Report</h2>
+                    <div class="flex items-center space-x-4">
+                        <select class="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm">
+                            <option>SP-2024-001847</option>
+                            <option>SP-2024-001846</option>
+                            <option>SP-2024-001845</option>
+                        </select>
+                        <button class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm transition-colors">
+                            Export Report
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Status Bar -->
+                <div class="status-reject rounded-lg p-4 flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-2xl">❌</span>
+                        <div>
+                            <div class="font-semibold text-lg">REJECTED</div>
+                            <div class="text-sm opacity-90">AI Confidence: 94.2% | Inspected: 2024-01-15 14:23:17</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm opacity-90">Panel ID</div>
+                        <div class="font-mono text-lg">SP-2024-001847</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Image Comparison -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-slate-800 rounded-xl p-6">
+                    <h3 class="text-lg font-semibold mb-4">Original EL Image</h3>
+                    <div class="panel-image aspect-square rounded-lg relative">
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="text-slate-400 text-center">
+                                <div class="w-16 h-16 mx-auto mb-2 bg-slate-600 rounded-lg flex items-center justify-center">
+                                    <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                                <p class="text-sm">Original EL Image</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-slate-800 rounded-xl p-6">
+                    <h3 class="text-lg font-semibold mb-4">AI Heatmap Analysis</h3>
+                    <div class="panel-image aspect-square rounded-lg relative">
+                        <div class="heatmap-overlay absolute inset-0 opacity-80 rounded-lg"></div>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="text-slate-400 text-center">
+                                <div class="w-16 h-16 mx-auto mb-2 bg-slate-600 rounded-lg flex items-center justify-center">
+                                    <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                                <p class="text-sm">Heatmap Overlay</p>
+                            </div>
+                        </div>
+                        <!-- Defect Markers -->
+                        <div class="absolute top-1/4 left-1/3 w-3 h-3 bg-red-500 rounded-full border border-white"></div>
+                        <div class="absolute top-2/3 right-1/4 w-3 h-3 bg-yellow-500 rounded-full border border-white"></div>
+                        <div class="absolute bottom-1/3 left-1/2 w-3 h-3 bg-red-500 rounded-full border border-white"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Defect Details Table -->
+            <div class="bg-slate-800 rounded-xl p-6">
+                <h3 class="text-lg font-semibold mb-4">Defect Analysis Details</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-700">
+                                <th class="text-left py-3 px-4">Defect ID</th>
+                                <th class="text-left py-3 px-4">Type</th>
+                                <th class="text-left py-3 px-4">Location (X,Y)</th>
+                                <th class="text-left py-3 px-4">Severity</th>
+                                <th class="text-left py-3 px-4">AI Confidence</th>
+                                <th class="text-left py-3 px-4">Size (mm²)</th>
+                                <th class="text-left py-3 px-4">Impact</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-700">
+                            <tr class="hover:bg-slate-700/50">
+                                <td class="py-3 px-4 font-mono text-blue-400">DEF-001</td>
+                                <td class="py-3 px-4">
+                                    <span class="bg-red-900 text-red-300 px-2 py-1 rounded text-xs">Micro-crack</span>
+                                </td>
+                                <td class="py-3 px-4 font-mono">(127, 89)</td>
+                                <td class="py-3 px-4">
+                                    <span class="text-red-400 font-semibold">Critical</span>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <span class="text-green-400">96.8%</span>
+                                </td>
+                                <td class="py-3 px-4">2.3</td>
+                                <td class="py-3 px-4 text-red-400">-15% Power</td>
+                            </tr>
+                            <tr class="hover:bg-slate-700/50">
+                                <td class="py-3 px-4 font-mono text-blue-400">DEF-002</td>
+                                <td class="py-3 px-4">
+                                    <span class="bg-yellow-900 text-yellow-300 px-2 py-1 rounded text-xs">Cell Defect</span>
+                                </td>
+                                <td class="py-3 px-4 font-mono">(203, 156)</td>
+                                <td class="py-3 px-4">
+                                    <span class="text-yellow-400 font-semibold">Moderate</span>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <span class="text-green-400">89.2%</span>
+                                </td>
+                                <td class="py-3 px-4">1.7</td>
+                                <td class="py-3 px-4 text-yellow-400">-8% Power</td>
+                            </tr>
+                            <tr class="hover:bg-slate-700/50">
+                                <td class="py-3 px-4 font-mono text-blue-400">DEF-003</td>
+                                <td class="py-3 px-4">
+                                    <span class="bg-red-900 text-red-300 px-2 py-1 rounded text-xs">Fine Crack</span>
+                                </td>
+                                <td class="py-3 px-4 font-mono">(78, 234)</td>
+                                <td class="py-3 px-4">
+                                    <span class="text-red-400 font-semibold">High</span>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <span class="text-green-400">92.5%</span>
+                                </td>
+                                <td class="py-3 px-4">1.1</td>
+                                <td class="py-3 px-4 text-red-400">-12% Power</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen 3: Analytics & Trends Dashboard -->
+    <div id="screen-analytics" class="screen-content hidden p-6">
+        <div class="max-w-7xl mx-auto space-y-6">
+            <!-- KPI Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-slate-800 rounded-xl p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-400 text-sm">Total Defects</p>
+                            <p class="text-2xl font-bold text-red-400">1,247</p>
+                            <p class="text-xs text-slate-500 mt-1">Last 2 days</p>
+                        </div>
+                        <div class="w-12 h-12 bg-red-900/30 rounded-lg flex items-center justify-center">
+                            <span class="text-red-400 text-xl">⚠️</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-slate-800 rounded-xl p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-400 text-sm">Defect Rate</p>
+                            <p class="text-2xl font-bold text-yellow-400">12.7</p>
+                            <p class="text-xs text-slate-500 mt-1">per 1000 panels</p>
+                        </div>
+                        <div class="w-12 h-12 bg-yellow-900/30 rounded-lg flex items-center justify-center">
+                            <span class="text-yellow-400 text-xl">📊</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-slate-800 rounded-xl p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-400 text-sm">Best Line</p>
+                            <p class="text-2xl font-bold text-green-400">Line A</p>
+                            <p class="text-xs text-slate-500 mt-1">2.1% defect rate</p>
+                        </div>
+                        <div class="w-12 h-12 bg-green-900/30 rounded-lg flex items-center justify-center">
+                            <span class="text-green-400 text-xl">🏆</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-slate-800 rounded-xl p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-400 text-sm">Worst Line</p>
+                            <p class="text-2xl font-bold text-red-400">Line D</p>
+                            <p class="text-xs text-slate-500 mt-1">18.9% defect rate</p>
+                        </div>
+                        <div class="w-12 h-12 bg-red-900/30 rounded-lg flex items-center justify-center">
+                            <span class="text-red-400 text-xl">⬇️</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Charts Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Defect Types Chart -->
+                <div class="bg-slate-800 rounded-xl p-6">
+                    <h3 class="text-lg font-semibold mb-4">Defect Types Distribution</h3>
+                    <canvas id="defectTypesChart" width="50" height="100"></canvas>
+                </div>
+                
+                <!-- Production Line Performance -->
+                <div class="bg-slate-800 rounded-xl p-6">
+                    <h3 class="text-lg font-semibold mb-4">Production Line Performance</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm">Line A</span>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-32 bg-slate-700 rounded-full h-2">
+                                    <div class="bg-green-500 h-2 rounded-full" style="width: 97.9%"></div>
+                                </div>
+                                <span class="text-sm text-green-400 font-semibold">97.9%</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm">Line B</span>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-32 bg-slate-700 rounded-full h-2">
+                                    <div class="bg-green-500 h-2 rounded-full" style="width: 94.2%"></div>
+                                </div>
+                                <span class="text-sm text-green-400 font-semibold">94.2%</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm">Line C</span>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-32 bg-slate-700 rounded-full h-2">
+                                    <div class="bg-yellow-500 h-2 rounded-full" style="width: 89.7%"></div>
+                                </div>
+                                <span class="text-sm text-yellow-400 font-semibold">89.7%</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm">Line D</span>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-32 bg-slate-700 rounded-full h-2">
+                                    <div class="bg-red-500 h-2 rounded-full" style="width: 81.1%"></div>
+                                </div>
+                                <span class="text-sm text-red-400 font-semibold">81.1%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Time Series Chart -->
+            <div class="bg-slate-800 rounded-xl p-6">
+                <h3 class="text-lg font-semibold mb-4">Daily Defect Trends (Last 30 Days)</h3>
+                <canvas id="trendsChart" width="800" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen 4: Escalation Page -->
+    <div id="screen-escalation" class="screen-content hidden p-6">
+        <div class="max-w-7xl mx-auto space-y-6">
+            <!-- Header -->
+            <div class="bg-slate-800 rounded-xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-2xl font-semibold">Escalation Queue</h2>
+                        <p class="text-slate-400 mt-1">Panels requiring secondary inspection</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-yellow-400">23</div>
+                            <div class="text-xs text-slate-400">Pending</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-blue-400">8</div>
+                            <div class="text-xs text-slate-400">In Progress</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-green-400">156</div>
+                            <div class="text-xs text-slate-400">Completed</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filter Controls -->
+            <div class="bg-slate-800 rounded-xl p-4">
+                <div class="flex items-center space-x-4">
+                    <select class="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm">
+                        <option>All Status</option>
+                        <option>Pending</option>
+                        <option>In Progress</option>
+                        <option>Completed</option>
+                    </select>
+                    <select class="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm">
+                        <option>All Inspection Types</option>
+                        <option>Ultrasonic</option>
+                        <option>Thermography</option>
+                        <option>Manual Review</option>
+                    </select>
+                    <select class="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm">
+                        <option>All Priority</option>
+                        <option>High</option>
+                        <option>Medium</option>
+                        <option>Low</option>
+                    </select>
+                    <button class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm transition-colors">
+                        Apply Filters
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Escalation List -->
+            <div class="bg-slate-800 rounded-xl p-6">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-700">
+                                <th class="text-left py-3 px-4">Panel ID</th>
+                                <th class="text-left py-3 px-4">AI Decision</th>
+                                <th class="text-left py-3 px-4">Confidence</th>
+                                <th class="text-left py-3 px-4">Secondary Method</th>
+                                <th class="text-left py-3 px-4">Priority</th>
+                                <th class="text-left py-3 px-4">Status</th>
+                                <th class="text-left py-3 px-4">Assigned To</th>
+                                <th class="text-left py-3 px-4">Created</th>
+                                <th class="text-left py-3 px-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-700">
+                            <tr class="hover:bg-slate-700/50">
+                                <td class="py-3 px-4 font-mono text-blue-400">SP-2024-001823</td>
+                                <td class="py-3 px-4">
+                                    <span class="bg-yellow-900 text-yellow-300 px-2 py-1 rounded text-xs">🔍 RECHECK</span>
+                                </td>
+                                <td class="py-3 px-4 text-yellow-400">67.3%</td>
+                                <td class="py-3 px-4">
+                                    <span class="bg-purple-900 text-purple-300 px-2 py-1 rounded text-xs">Ultrasonic</span>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <span class="text-red-400 font-semibold">High</span>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <span class="bg-yellow-900 text-yellow-300 px-2 py-1 rounded text-xs">Pending</span>
+                                </td>
+                                <td class="py-3 px-4 text-slate-400">Unassigned</td>
+                                <td class="py-3 px-4 text-slate-400">2 hours ago</td>
+                                <td class="py-3 px-4">
+                                    <button class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-xs transition-colors">
+                                        Assign
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-slate-700/50">
+                                <td class="py-3 px-4 font-mono text-blue-400">SP-2024-001819</td>
+                                <td class="py-3 px-4">
+                                    <span class="bg-yellow-900 text-yellow-300 px-2 py-1 rounded text-xs">🔍 RECHECK</span>
+                                </td>
+                                <td class="py-3 px-4 text-yellow-400">71.8%</td>
+                                <td class="py-3 px-4">
+                                    <span class="bg-orange-900 text-orange-300 px-2 py-1 rounded text-xs">Thermography</span>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <span class="text-yellow-400 font-semibold">Medium</span>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <span class="bg-blue-900 text-blue-300 px-2 py-1 rounded text-xs">In Progress</span>
+                                </td>
+                                <td class="py-3 px-4 text-blue-400">Tech-A2</td>
+                                <td class="py-3 px-4 text-slate-400">4 hours ago</td>
+                                <td class="py-3 px-4">
+                                    <button class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-xs transition-colors">
+                                        View
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-slate-700/50">
+                                <td class="py-3 px-4 font-mono text-blue-400">SP-2024-001815</td>
+                                <td class="py-3 px-4">
+                                    <span class="bg-red-900 text-red-300 px-2 py-1 rounded text-xs">❌ REJECT</span>
+                                </td>
+                                <td class="py-3 px-4 text-red-400">78.2%</td>
+                                <td class="py-3 px-4">
+                                    <span class="bg-gray-700 text-gray-300 px-2 py-1 rounded text-xs">Manual Review</span>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <span class="text-green-400 font-semibold">Low</span>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <span class="bg-green-900 text-green-300 px-2 py-1 rounded text-xs">Completed</span>
+                                </td>
+                                <td class="py-3 px-4 text-blue-400">Tech-B1</td>
+                                <td class="py-3 px-4 text-slate-400">1 day ago</td>
+                                <td class="py-3 px-4">
+                                    <button class="bg-slate-600 hover:bg-slate-500 px-3 py-1 rounded text-xs transition-colors">
+                                        Report
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-slate-700/50">
+                                <td class="py-3 px-4 font-mono text-blue-400">SP-2024-001812</td>
+                                <td class="py-3 px-4">
+                                    <span class="bg-yellow-900 text-yellow-300 px-2 py-1 rounded text-xs">🔍 RECHECK</span>
+                                </td>
+                                <td class="py-3 px-4 text-yellow-400">69.1%</td>
+                                <td class="py-3 px-4">
+                                    <span class="bg-purple-900 text-purple-300 px-2 py-1 rounded text-xs">Ultrasonic</span>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <span class="text-red-400 font-semibold">High</span>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <span class="bg-yellow-900 text-yellow-300 px-2 py-1 rounded text-xs">Pending</span>
+                                </td>
+                                <td class="py-3 px-4 text-slate-400">Unassigned</td>
+                                <td class="py-3 px-4 text-slate-400">6 hours ago</td>
+                                <td class="py-3 px-4">
+                                    <button class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-xs transition-colors">
+                                        Assign
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-slate-700/50">
+                                <td class="py-3 px-4 font-mono text-blue-400">SP-2024-001808</td>
+                                <td class="py-3 px-4">
+                                    <span class="bg-yellow-900 text-yellow-300 px-2 py-1 rounded text-xs">🔍 RECHECK</span>
+                                </td>
+                                <td class="py-3 px-4 text-yellow-400">64.7%</td>
+                                <td class="py-3 px-4">
+                                    <span class="bg-orange-900 text-orange-300 px-2 py-1 rounded text-xs">Thermography</span>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <span class="text-yellow-400 font-semibold">Medium</span>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <span class="bg-blue-900 text-blue-300 px-2 py-1 rounded text-xs">In Progress</span>
+                                </td>
+                                <td class="py-3 px-4 text-blue-400">Tech-C3</td>
+                                <td class="py-3 px-4 text-slate-400">8 hours ago</td>
+                                <td class="py-3 px-4">
+                                    <button class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-xs transition-colors">
+                                        View
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Screen Navigation
+        function showScreen(screenName) {
+            // Hide all screens
+            document.querySelectorAll('.screen-content').forEach(screen => {
+                screen.classList.add('hidden');
+            });
+            
+            // Show selected screen
+            document.getElementById(`screen-${screenName}`).classList.remove('hidden');
+            document.getElementById(`screen-${screenName}`).classList.add('fade-in');
+            
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(tab => {
+                tab.classList.remove('bg-blue-600', 'text-white');
+                tab.classList.add('bg-slate-700', 'hover:bg-slate-600', 'text-slate-300');
+            });
+            
+            document.getElementById(`tab-${screenName}`).classList.remove('bg-slate-700', 'hover:bg-slate-600', 'text-slate-300');
+            document.getElementById(`tab-${screenName}`).classList.add('bg-blue-600', 'text-white');
+            
+            // Initialize charts if analytics screen
+            if (screenName === 'analytics') {
+                setTimeout(initCharts, 100);
+            }
+        }
+        
+        // Simulate real-time throughput counter
+        function updateThroughput() {
+            const counter = document.getElementById('throughput-counter');
+            if (counter) {
+                const currentValue = parseFloat(counter.textContent);
+                const newValue = (currentValue + (Math.random() - 0.5) * 0.5).toFixed(1);
+                counter.textContent = Math.max(20, Math.min(30, newValue));
+            }
+        }
+        
+        // Simulate panel ID updates
+        function updatePanelId() {
+            const panelId = document.getElementById('current-panel-id');
+            if (panelId) {
+                const currentId = parseInt(panelId.textContent.split('-')[2]);
+                panelId.textContent = `SP-2024-${String(currentId + 1).padStart(6, '0')}`;
+            }
+        }
+        
+        // Initialize Charts
+        function initCharts() {
+            // Defect Types Chart
+            const ctx1 = document.getElementById('defectTypesChart');
+            if (ctx1) {
+                new Chart(ctx1, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Micro-cracks', 'Cell Defects', 'Fine Cracks', 'Hot Spots', 'Corrosion'],
+                        datasets: [{
+                            label: 'Defect Count',
+                            data: [487, 312, 298, 89, 61],
+                            backgroundColor: [
+                                'rgba(239, 68, 68, 0.8)',
+                                'rgba(245, 158, 11, 0.8)',
+                                'rgba(239, 68, 68, 0.6)',
+                                'rgba(168, 85, 247, 0.8)',
+                                'rgba(59, 130, 246, 0.8)'
+                            ],
+                            borderColor: [
+                                'rgb(239, 68, 68)',
+                                'rgb(245, 158, 11)',
+                                'rgb(239, 68, 68)',
+                                'rgb(168, 85, 247)',
+                                'rgb(59, 130, 246)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(148, 163, 184, 0.1)'
+                                },
+                                ticks: {
+                                    color: 'rgba(148, 163, 184, 0.8)'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    color: 'rgba(148, 163, 184, 0.1)'
+                                },
+                                ticks: {
+                                    color: 'rgba(148, 163, 184, 0.8)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Trends Chart
+            const ctx2 = document.getElementById('trendsChart');
+            if (ctx2) {
+                const dates = [];
+                const defectCounts = [];
+                const movingAverage = [];
+                
+                for (let i = 29; i >= 0; i--) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    dates.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+                    
+                    const baseDefects = 40 + Math.sin(i * 0.2) * 10;
+                    const randomVariation = (Math.random() - 0.5) * 20;
+                    defectCounts.push(Math.max(0, Math.round(baseDefects + randomVariation)));
+                }
+                
+                // Calculate moving average
+                for (let i = 0; i < defectCounts.length; i++) {
+                    const start = Math.max(0, i - 6);
+                    const end = Math.min(defectCounts.length, i + 7);
+                    const sum = defectCounts.slice(start, end).reduce((a, b) => a + b, 0);
+                    movingAverage.push(sum / (end - start));
+                }
+                
+                new Chart(ctx2, {
+                    type: 'line',
+                    data: {
+                        labels: dates,
+                        datasets: [{
+                            label: 'Daily Defects',
+                            data: defectCounts,
+                            borderColor: 'rgb(239, 68, 68)',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            tension: 0.1,
+                            fill: true
+                        }, {
+                            label: '7-Day Moving Average',
+                            data: movingAverage,
+                            borderColor: 'rgb(59, 130, 246)',
+                            backgroundColor: 'transparent',
+                            tension: 0.4,
+                            borderWidth: 3,
+                            pointRadius: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: 'rgba(148, 163, 184, 0.8)'
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(148, 163, 184, 0.1)'
+                                },
+                                ticks: {
+                                    color: 'rgba(148, 163, 184, 0.8)'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    color: 'rgba(148, 163, 184, 0.1)'
+                                },
+                                ticks: {
+                                    color: 'rgba(148, 163, 184, 0.8)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        
+        // Start real-time updates
+        setInterval(updateThroughput, 3000);
+        setInterval(updatePanelId, 5000);
+        
+        // Initialize default screen
+        showScreen('live');
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'980292e5d703f536',t:'MTc1ODA0ODg4Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
+
+
