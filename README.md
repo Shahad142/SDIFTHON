@@ -94,7 +94,7 @@ Once opened, the dashboard (`Dashbord.html`) likely displays a layout similar to
 +--------------------------------------------------+
 ```
 
-*Note: The exact content depends on the implementation inside `Dashbord.html`.*
+
 
 ---
 
@@ -105,7 +105,7 @@ SDIFTHON/
 └── Dashbord.html    # Main dashboard interface (single file)
 ```
 
-*Note: The repository currently contains only one HTML file. No CSS, JS, images, or other assets are present.*
+
 
 ---
 
