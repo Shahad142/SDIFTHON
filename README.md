@@ -137,15 +137,3 @@ SDIFTHON/
 ## 👤 Maintainer
 
 **SHAHAD KHUZAYYIM** – [@Shahad142](https://github.com/Shahad142)
-
-
-
-
-
----
-
-*Built with HTML5*
-
----
-
-This README accurately reflects the current state of the repository (single HTML file named `Dashbord.html`) while providing clear guidance on what the project likely aims to achieve. Would you like me to generate README files for any additional repositories?
