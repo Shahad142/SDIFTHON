@@ -117,19 +117,6 @@ SDIFTHON/
 - [ ] Integrate with backend API (REST, Firebase) for live metrics
 
 
----
-
-## 📝 Notes
-
-> **Spelling:** The file is named `Dashbord.html` (missing an "a") – consider renaming to `dashboard.html` for clarity.
->
-> **Content:** The actual content of `Dashbord.html` was not accessible in the repository view. The dashboard likely contains basic HTML structure with potential CSS styling and placeholder data.
->
-> **Project Name:** "SDIFTHON" may be a custom acronym or brand name. No additional context is provided in the repository.
->
-> **Language:** Repository shows 100% HTML – no CSS or JavaScript files are currently present, suggesting styles and scripts may be inline within the HTML file.
->
-> **Deployment:** This is a static HTML file and can be hosted on GitHub Pages, Netlify, Vercel, or any web server.
 
 ---
 
